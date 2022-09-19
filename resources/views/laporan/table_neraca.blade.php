@@ -1,5 +1,5 @@
 
-<h1 class="text-center">Laporan Neraca <br /> <small>{{$bulan}} {{$tahun}}</small></h1>
+<h1 class="text-center">Neraca Saldo 31 Desember {{$tahun}}</h1>
 <table class="table table-bordered" id="datatable">
     <thead>
         <tr>

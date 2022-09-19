@@ -18,27 +18,26 @@ class LaporanController extends Controller
 
     public function filter_laba_rugi(Request $request)
     {
-        $bulan = $request->bulan;
         $tahun = $request->tahun;
        
         $data_array = array();
         $akun = DB::select("SELECT * FROM akuns ORDER BY kode_akun");
 
-        $penjualan = DB::select(DB::raw("SELECT sum(b.harga_jual) as nominal,sum(b.harga_beli) as nominal_beli, p.jumlah FROM penjualan p JOIN barang b ON b.id_barang=p.barang WHERE MONTH(p.tgl_jual) BETWEEN 1 AND $bulan AND YEAR(p.tgl_jual) = $tahun"));
-        $pembelian = DB::select(DB::raw("SELECT sum(p.harga_beli) as nominal FROM pembelian p JOIN barang b ON b.id_barang=p.barang WHERE MONTH(p.tgl_beli) BETWEEN 1 AND $bulan AND YEAR(p.tgl_beli) = $tahun"));
-        $beban_gaji = DB::select(DB::raw("SELECT sum(nominal) as nominal FROM beban WHERE MONTH(tgl_beban) BETWEEN 1 AND $bulan AND YEAR(tgl_beban) = $tahun AND serba_serbi='Beban Gaji'"));
-        $beban_listrik = DB::select(DB::raw("SELECT sum(nominal) as nominal FROM beban WHERE MONTH(tgl_beban) BETWEEN 1 AND $bulan AND YEAR(tgl_beban) = $tahun AND serba_serbi='Beban Listrik'"));
-        $beban_jasa = DB::select(DB::raw("SELECT sum(nominal) as nominal FROM beban WHERE MONTH(tgl_beban) BETWEEN 1 AND $bulan AND YEAR(tgl_beban) = $tahun AND serba_serbi='Beban Jasa'"));
-        $beban_penyusutan = DB::select(DB::raw("SELECT sum(nominal) as nominal FROM beban WHERE MONTH(tgl_beban) BETWEEN 1 AND $bulan AND YEAR(tgl_beban) = $tahun AND serba_serbi='Beban Penyusutan Peralatan Usaha'"));
-        $peralatan = DB::select(DB::raw("SELECT sum(harga_aset) as nominal FROM peralatan WHERE MONTH(tgl_aset) BETWEEN 1 AND $bulan AND YEAR(tgl_aset) = $tahun"));
-        $jasa = DB::select(DB::raw("SELECT sum(j.harga_jual) as nominal FROM penjualan p JOIN jasa j ON j.id_jasa=p.jasa  WHERE MONTH(p.tgl_jual) BETWEEN 1 AND $bulan AND YEAR(p.tgl_jual) = $tahun AND p.jasa !=0"));
+        $penjualan = DB::select(DB::raw("SELECT sum(b.harga_jual) as nominal,sum(b.harga_beli) as nominal_beli, p.jumlah FROM penjualan p JOIN barang b ON b.id_barang=p.barang WHERE YEAR(p.tgl_jual) = $tahun"));
+        $pembelian = DB::select(DB::raw("SELECT sum(p.harga_beli) as nominal FROM pembelian p JOIN barang b ON b.id_barang=p.barang WHERE YEAR(p.tgl_beli) = $tahun"));
+        $beban_gaji = DB::select(DB::raw("SELECT sum(nominal) as nominal FROM beban WHERE YEAR(tgl_beban) = $tahun AND serba_serbi='Beban Gaji'"));
+        $beban_listrik = DB::select(DB::raw("SELECT sum(nominal) as nominal FROM beban WHERE YEAR(tgl_beban) = $tahun AND serba_serbi='Beban Listrik'"));
+        $beban_jasa = DB::select(DB::raw("SELECT sum(nominal) as nominal FROM beban WHERE YEAR(tgl_beban) = $tahun AND serba_serbi='Beban Jasa'"));
+        $beban_penyusutan = DB::select(DB::raw("SELECT sum(nominal) as nominal FROM beban WHERE YEAR(tgl_beban) = $tahun AND serba_serbi='Beban Penyusutan Peralatan Usaha'"));
+        $peralatan = DB::select(DB::raw("SELECT sum(harga_aset) as nominal FROM peralatan WHERE YEAR(tgl_aset) = $tahun"));
+        $jasa = DB::select(DB::raw("SELECT sum(j.harga_jual) as nominal FROM penjualan p JOIN jasa j ON j.id_jasa=p.jasa  WHERE YEAR(p.tgl_jual) = $tahun AND p.jasa !=0"));
         foreach ($akun as $akun) {
             $kode_akun = $akun->kode_akun;
             $saldo_awal = $akun->saldo_awal;
             $kas_nominal = $penjualan[0]->nominal * $penjualan[0]->jumlah  - $beban_listrik[0]->nominal + $jasa[0]->nominal;
             $pembelian_nominal = $penjualan[0]->nominal_beli * $penjualan[0]->jumlah;
             $penjualan_nominal = $penjualan[0]->nominal * $penjualan[0]->jumlah;
-            if ($bulan > 1) {
+            // if ($bulan > 1) {
                 if ($kode_akun == 1011) {
                     $saldo_awal += $kas_nominal;
                 }
@@ -76,7 +75,7 @@ class LaporanController extends Controller
                 if ($kode_akun == 5101) {
                     $saldo_awal = $pembelian_nominal;
                 }
-            }
+            // }
             $data = new stdClass();
             $data->kode_akun = $akun->kode_akun;
             $data->nama_akun = $akun->nama_akun;
@@ -84,11 +83,8 @@ class LaporanController extends Controller
             $data->saldo_awal = $saldo_awal;
             array_push($data_array, $data);
         }
-        $month = array('Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember');
-        $bulan = (int)$request->bulan;
-        $bulan_text = $month[$bulan - 1];
+      
         $view = view('laporan.table_laba_rugi', [
-            "bulan" => $bulan_text,
             "tahun" => $tahun,
             "data" => $data_array
         ])->render();
@@ -97,27 +93,26 @@ class LaporanController extends Controller
     }
     public function print_laba_rugi(Request $request)
     {
-        $bulan = $request->bulan;
         $tahun = $request->tahun;
        
         $data_array = array();
         $akun = DB::select("SELECT * FROM akuns ORDER BY kode_akun");
 
-        $penjualan = DB::select(DB::raw("SELECT sum(b.harga_jual) as nominal,sum(b.harga_beli) as nominal_beli, p.jumlah FROM penjualan p JOIN barang b ON b.id_barang=p.barang WHERE MONTH(p.tgl_jual) BETWEEN 1 AND $bulan AND YEAR(p.tgl_jual) = $tahun"));
-        $pembelian = DB::select(DB::raw("SELECT sum(p.harga_beli) as nominal FROM pembelian p JOIN barang b ON b.id_barang=p.barang WHERE MONTH(p.tgl_beli) BETWEEN 1 AND $bulan AND YEAR(p.tgl_beli) = $tahun"));
-        $beban_gaji = DB::select(DB::raw("SELECT sum(nominal) as nominal FROM beban WHERE MONTH(tgl_beban) BETWEEN 1 AND $bulan AND YEAR(tgl_beban) = $tahun AND serba_serbi='Beban Gaji'"));
-        $beban_listrik = DB::select(DB::raw("SELECT sum(nominal) as nominal FROM beban WHERE MONTH(tgl_beban) BETWEEN 1 AND $bulan AND YEAR(tgl_beban) = $tahun AND serba_serbi='Beban Listrik'"));
-        $beban_jasa = DB::select(DB::raw("SELECT sum(nominal) as nominal FROM beban WHERE MONTH(tgl_beban) BETWEEN 1 AND $bulan AND YEAR(tgl_beban) = $tahun AND serba_serbi='Beban Jasa'"));
-        $beban_penyusutan = DB::select(DB::raw("SELECT sum(nominal) as nominal FROM beban WHERE MONTH(tgl_beban) BETWEEN 1 AND $bulan AND YEAR(tgl_beban) = $tahun AND serba_serbi='Beban Penyusutan Peralatan Usaha'"));
-        $peralatan = DB::select(DB::raw("SELECT sum(harga_aset) as nominal FROM peralatan WHERE MONTH(tgl_aset) BETWEEN 1 AND $bulan AND YEAR(tgl_aset) = $tahun"));
-        $jasa = DB::select(DB::raw("SELECT sum(j.harga_jual) as nominal FROM penjualan p JOIN jasa j ON j.id_jasa=p.jasa  WHERE MONTH(p.tgl_jual) BETWEEN 1 AND $bulan AND YEAR(p.tgl_jual) = $tahun AND p.jasa !=0"));
+        $penjualan = DB::select(DB::raw("SELECT sum(b.harga_jual) as nominal,sum(b.harga_beli) as nominal_beli, p.jumlah FROM penjualan p JOIN barang b ON b.id_barang=p.barang WHERE YEAR(p.tgl_jual) = $tahun"));
+        $pembelian = DB::select(DB::raw("SELECT sum(p.harga_beli) as nominal FROM pembelian p JOIN barang b ON b.id_barang=p.barang WHERE YEAR(p.tgl_beli) = $tahun"));
+        $beban_gaji = DB::select(DB::raw("SELECT sum(nominal) as nominal FROM beban WHERE YEAR(tgl_beban) = $tahun AND serba_serbi='Beban Gaji'"));
+        $beban_listrik = DB::select(DB::raw("SELECT sum(nominal) as nominal FROM beban WHERE YEAR(tgl_beban) = $tahun AND serba_serbi='Beban Listrik'"));
+        $beban_jasa = DB::select(DB::raw("SELECT sum(nominal) as nominal FROM beban WHERE YEAR(tgl_beban) = $tahun AND serba_serbi='Beban Jasa'"));
+        $beban_penyusutan = DB::select(DB::raw("SELECT sum(nominal) as nominal FROM beban WHERE YEAR(tgl_beban) = $tahun AND serba_serbi='Beban Penyusutan Peralatan Usaha'"));
+        $peralatan = DB::select(DB::raw("SELECT sum(harga_aset) as nominal FROM peralatan WHERE YEAR(tgl_aset) = $tahun"));
+        $jasa = DB::select(DB::raw("SELECT sum(j.harga_jual) as nominal FROM penjualan p JOIN jasa j ON j.id_jasa=p.jasa  WHERE YEAR(p.tgl_jual) = $tahun AND p.jasa !=0"));
         foreach ($akun as $akun) {
             $kode_akun = $akun->kode_akun;
             $saldo_awal = $akun->saldo_awal;
             $kas_nominal = $penjualan[0]->nominal * $penjualan[0]->jumlah  - $beban_listrik[0]->nominal + $jasa[0]->nominal;
             $pembelian_nominal = $penjualan[0]->nominal_beli * $penjualan[0]->jumlah;
             $penjualan_nominal = $penjualan[0]->nominal * $penjualan[0]->jumlah;
-            if ($bulan > 1) {
+            // if ($bulan > 1) {
                 if ($kode_akun == 1011) {
                     $saldo_awal += $kas_nominal;
                 }
@@ -136,7 +131,7 @@ class LaporanController extends Controller
                     $saldo_awal = $penjualan_nominal;
                 }
                 if ($kode_akun == 4102) {
-                    $saldo_awal = $jasa[0]->nominal;
+                    $saldo_awal = $jasa[0]->nominal ;
                 }
 
                 if ($kode_akun == 6101) {
@@ -155,7 +150,7 @@ class LaporanController extends Controller
                 if ($kode_akun == 5101) {
                     $saldo_awal = $pembelian_nominal;
                 }
-            }
+            // }
             $data = new stdClass();
             $data->kode_akun = $akun->kode_akun;
             $data->nama_akun = $akun->nama_akun;
@@ -163,11 +158,11 @@ class LaporanController extends Controller
             $data->saldo_awal = $saldo_awal;
             array_push($data_array, $data);
         }
-        $month = array('Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember');
-        $bulan = (int)$request->bulan;
-        $bulan_text = $month[$bulan - 1];
+        // $month = array('Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember');
+        // $bulan = (int)$request->bulan;
+        // $bulan_text = $month[$bulan - 1];
         $data = [
-            "bulan" => $bulan_text,
+            // "bulan" => $bulan_text,
             "tahun" => $tahun,
             "data" => $data_array
         ];
@@ -183,25 +178,25 @@ class LaporanController extends Controller
 
     public function filter_neraca(Request $request)
     {
-        $bulan = $request->bulan;
         $tahun = $request->tahun;
 
         $data_array = array();
         $akun = DB::select("SELECT * FROM akuns ORDER BY kode_akun");
-        $penjualan = DB::select(DB::raw("SELECT sum(b.harga_jual) as nominal,sum(b.harga_beli) as nominal_beli, p.jumlah FROM penjualan p JOIN barang b ON b.id_barang=p.barang WHERE MONTH(p.tgl_jual) BETWEEN 1 AND $bulan AND YEAR(p.tgl_jual) = $tahun"));
-        $pembelian = DB::select(DB::raw("SELECT sum(p.harga_beli) as nominal FROM pembelian p JOIN barang b ON b.id_barang=p.barang WHERE MONTH(p.tgl_beli) BETWEEN 1 AND $bulan AND YEAR(p.tgl_beli) = $tahun"));
-        $beban_gaji = DB::select(DB::raw("SELECT sum(nominal) as nominal FROM beban WHERE MONTH(tgl_beban) BETWEEN 1 AND $bulan AND YEAR(tgl_beban) = $tahun AND serba_serbi='Beban Gaji'"));
-        $beban_listrik = DB::select(DB::raw("SELECT sum(nominal) as nominal FROM beban WHERE MONTH(tgl_beban) BETWEEN 1 AND $bulan AND YEAR(tgl_beban) = $tahun AND serba_serbi='Beban Listrik'"));
-        $beban_jasa = DB::select(DB::raw("SELECT sum(nominal) as nominal FROM beban WHERE MONTH(tgl_beban) BETWEEN 1 AND $bulan AND YEAR(tgl_beban) = $tahun AND serba_serbi='Beban Jasa'"));
-        $peralatan = DB::select(DB::raw("SELECT sum(harga_aset) as nominal FROM peralatan WHERE MONTH(tgl_aset) BETWEEN 1 AND $bulan AND YEAR(tgl_aset) = $tahun"));
-        $jasa = DB::select(DB::raw("SELECT sum(j.harga_jual) as nominal FROM penjualan p JOIN jasa j ON j.id_jasa=p.jasa  WHERE MONTH(p.tgl_jual)  BETWEEN 1 AND $bulan AND YEAR(p.tgl_jual) = $tahun AND p.jasa !=0"));
+        $penjualan = DB::select(DB::raw("SELECT sum(b.harga_jual) as nominal,sum(b.harga_beli) as nominal_beli, p.jumlah FROM penjualan p JOIN barang b ON b.id_barang=p.barang WHERE YEAR(p.tgl_jual) = $tahun"));
+        $pembelian = DB::select(DB::raw("SELECT sum(p.harga_beli) as nominal FROM pembelian p JOIN barang b ON b.id_barang=p.barang WHERE YEAR(p.tgl_beli) = $tahun"));
+        $beban_gaji = DB::select(DB::raw("SELECT sum(nominal) as nominal FROM beban WHERE YEAR(tgl_beban) = $tahun AND serba_serbi='Beban Gaji'"));
+        $beban_listrik = DB::select(DB::raw("SELECT sum(nominal) as nominal FROM beban WHERE YEAR(tgl_beban) = $tahun AND serba_serbi='Beban Listrik'"));
+        $beban_jasa = DB::select(DB::raw("SELECT sum(nominal) as nominal FROM beban WHERE YEAR(tgl_beban) = $tahun AND serba_serbi='Beban Jasa'"));
+        $peralatan = DB::select(DB::raw("SELECT sum(harga_aset) as nominal FROM peralatan WHERE YEAR(tgl_aset) = $tahun"));
+        $jasa = DB::select(DB::raw("SELECT sum(j.harga_jual) as nominal FROM penjualan p JOIN jasa j ON j.id_jasa=p.jasa  WHERE YEAR(p.tgl_jual) = $tahun AND p.jasa !=0"));
+       
         foreach ($akun as $akun) {
             $kode_akun = $akun->kode_akun;
             $saldo_awal = $akun->saldo_awal;
             $penjualan_nominal = $penjualan[0]->nominal * $penjualan[0]->jumlah ;
             $kas_nominal = $penjualan[0]->nominal * $penjualan[0]->jumlah - $beban_listrik[0]->nominal +  $jasa[0]->nominal;
             $pembelian_nominal = $penjualan[0]->nominal_beli * $penjualan[0]->jumlah;
-            if ($bulan > 1) {
+            // if ($bulan > 1) {
                 if ($kode_akun == 1011) {
                     $saldo_awal += $kas_nominal;
                 }
@@ -232,7 +227,7 @@ class LaporanController extends Controller
                 if ($kode_akun == 5101) {
                     $saldo_awal = $pembelian_nominal;
                 }
-            }
+            // }
             $data = new stdClass();
             $data->kode_akun = $akun->kode_akun;
             $data->nama_akun = $akun->nama_akun;
@@ -244,11 +239,7 @@ class LaporanController extends Controller
             }
         }
 
-        $month = array('Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember');
-        $bulan = (int)$request->bulan;
-        $bulan_text = $month[$bulan - 1];
-        $view = view('laporan.table_neraca', [
-            "bulan" => $bulan_text,
+        $view = view('laporan.table_neraca_new', [
             "tahun" => $tahun, "akun" => $data_array
         ])->render();
         return response()->json(['view' => $view]);
@@ -260,20 +251,20 @@ class LaporanController extends Controller
 
         $data_array = array();
         $akun = DB::select("SELECT * FROM akuns ORDER BY kode_akun");
-        $penjualan = DB::select(DB::raw("SELECT sum(b.harga_jual) as nominal,sum(b.harga_beli) as nominal_beli, p.jumlah FROM penjualan p JOIN barang b ON b.id_barang=p.barang WHERE MONTH(p.tgl_jual) BETWEEN 1 AND $bulan AND YEAR(p.tgl_jual) = $tahun"));
-        $pembelian = DB::select(DB::raw("SELECT sum(p.harga_beli) as nominal FROM pembelian p JOIN barang b ON b.id_barang=p.barang WHERE MONTH(p.tgl_beli) BETWEEN 1 AND $bulan AND YEAR(p.tgl_beli) = $tahun"));
-        $beban_gaji = DB::select(DB::raw("SELECT sum(nominal) as nominal FROM beban WHERE MONTH(tgl_beban) BETWEEN 1 AND $bulan AND YEAR(tgl_beban) = $tahun AND serba_serbi='Beban Gaji'"));
-        $beban_listrik = DB::select(DB::raw("SELECT sum(nominal) as nominal FROM beban WHERE MONTH(tgl_beban) BETWEEN 1 AND $bulan AND YEAR(tgl_beban) = $tahun AND serba_serbi='Beban Listrik'"));
-        $beban_jasa = DB::select(DB::raw("SELECT sum(nominal) as nominal FROM beban WHERE MONTH(tgl_beban) BETWEEN 1 AND $bulan AND YEAR(tgl_beban) = $tahun AND serba_serbi='Beban Jasa'"));
-        $peralatan = DB::select(DB::raw("SELECT sum(harga_aset) as nominal FROM peralatan WHERE MONTH(tgl_aset) BETWEEN 1 AND $bulan AND YEAR(tgl_aset) = $tahun"));
-        $jasa = DB::select(DB::raw("SELECT sum(j.harga_jual) as nominal FROM penjualan p JOIN jasa j ON j.id_jasa=p.jasa  WHERE MONTH(p.tgl_jual)  BETWEEN 1 AND $bulan AND YEAR(p.tgl_jual) = $tahun AND p.jasa !=0"));
+        $penjualan = DB::select(DB::raw("SELECT sum(b.harga_jual) as nominal,sum(b.harga_beli) as nominal_beli, p.jumlah FROM penjualan p JOIN barang b ON b.id_barang=p.barang WHERE YEAR(p.tgl_jual) = $tahun"));
+        $pembelian = DB::select(DB::raw("SELECT sum(p.harga_beli) as nominal FROM pembelian p JOIN barang b ON b.id_barang=p.barang WHERE YEAR(p.tgl_beli) = $tahun"));
+        $beban_gaji = DB::select(DB::raw("SELECT sum(nominal) as nominal FROM beban WHERE YEAR(tgl_beban) = $tahun AND serba_serbi='Beban Gaji'"));
+        $beban_listrik = DB::select(DB::raw("SELECT sum(nominal) as nominal FROM beban WHERE YEAR(tgl_beban) = $tahun AND serba_serbi='Beban Listrik'"));
+        $beban_jasa = DB::select(DB::raw("SELECT sum(nominal) as nominal FROM beban WHERE YEAR(tgl_beban) = $tahun AND serba_serbi='Beban Jasa'"));
+        $peralatan = DB::select(DB::raw("SELECT sum(harga_aset) as nominal FROM peralatan WHERE YEAR(tgl_aset) = $tahun"));
+        $jasa = DB::select(DB::raw("SELECT sum(j.harga_jual) as nominal FROM penjualan p JOIN jasa j ON j.id_jasa=p.jasa  WHERE YEAR(p.tgl_jual) = $tahun AND p.jasa !=0"));
         foreach ($akun as $akun) {
             $kode_akun = $akun->kode_akun;
             $saldo_awal = $akun->saldo_awal;
             $penjualan_nominal = $penjualan[0]->nominal * $penjualan[0]->jumlah ;
             $kas_nominal = $penjualan[0]->nominal * $penjualan[0]->jumlah - $beban_listrik[0]->nominal +  $jasa[0]->nominal;
             $pembelian_nominal = $penjualan[0]->nominal_beli * $penjualan[0]->jumlah;
-            if ($bulan > 1) {
+            // if ($bulan > 1) {
                 if ($kode_akun == 1011) {
                     $saldo_awal += $kas_nominal;
                 }
@@ -304,7 +295,7 @@ class LaporanController extends Controller
                 if ($kode_akun == 5101) {
                     $saldo_awal = $pembelian_nominal;
                 }
-            }
+            // }
             $data = new stdClass();
             $data->kode_akun = $akun->kode_akun;
             $data->nama_akun = $akun->nama_akun;
@@ -316,11 +307,8 @@ class LaporanController extends Controller
             }
         }
 
-        $month = array('Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember');
-        $bulan = (int)$request->bulan;
-        $bulan_text = $month[$bulan - 1];
+       
         $data = [
-            "bulan" => $bulan_text,
             "tahun" => $tahun, "akun" => $data_array
         ];
         return view('laporan.print_neraca', $data);

@@ -8,16 +8,7 @@ $year = date('Y');
 @endphp
 <form id="form_search">
     @csrf
-    <div class="form-group">
-        <label>Bulan</label>
-        <select name="bulan" id="bulan" class="form-control">
-            @foreach($month as $key=>$value)
-            <option value="{{$key + 1}}">{{$value}}</option>
-            @endforeach
-
-        </select>
-
-    </div>
+   
     <div class="form-group">
         <label>Tahun</label>
         <select name="tahun" id="tahun_pilih" class="form-control">
@@ -48,8 +39,7 @@ $year = date('Y');
 <script>
     $('#print').click(function() {
         let tahun = $('#tahun_pilih').val()
-        let bulan = $('#bulan').val()
-        window.open(`/laporan/laba-rugi/print?bulan=${bulan}&tahun=${tahun}`)
+        window.open(`/laporan/laba-rugi/print?tahun=${tahun}`)
     })
     $('#nominal_format').change(function() {
         let nominal = $(this).val()

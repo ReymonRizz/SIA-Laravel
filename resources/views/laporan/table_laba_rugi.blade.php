@@ -1,4 +1,4 @@
-<h1 class="text-center">Laporan Laba Rugi <br /> <small>{{$bulan}} {{$tahun}}</small></h1>
+<h1 class="text-center">Laporan Laba Rugi <br /> <small>31 Desember {{$tahun}}</small></h1>
 <table class="table table-borderless">
 
     <tbody>
@@ -18,10 +18,18 @@
         return number_format($number,0,',','.');
         }
         @endphp
-        <tr>
-            <td class="col-sm-5 font-weight-bold">Penjualan</td>
-        </tr>
+       
         @foreach($data as $dt)
+        @if($dt->kode_akun == 4102)
+        @php
+        $pendapatan = $dt->saldo_awal ?? 0;
+        @endphp
+        <tr>
+            <td class="col-sm-5">Pendapatan</td>
+            <td>Rp. {{currencyFormat($pendapatan)}}</td>
+            <td></td>
+        </tr>
+        @endif
         @if($dt->kode_akun == 4101)
         @php
         $penjualan = $dt->saldo_awal ?? 0;
@@ -46,7 +54,7 @@
         @endforeach
         @php
 
-        $laba_kotor = $penjualan - $hpp;
+        $laba_kotor = $penjualan - $hpp + $pendapatan ;
         @endphp
 
         <tr style="font-weight: bold;">
