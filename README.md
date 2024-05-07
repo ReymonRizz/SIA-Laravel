@@ -1,5 +1,5 @@
 # THIS ACCOUNTING INFORMATION SYSTEM PROJECT WAS MADE FOR GRADUATION
-## \Tech Stack : 
+## Tech Stack : 
 - PHP
 - Laravel
 - MySQL
